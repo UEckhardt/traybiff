@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.4
+Name=traybiff
+Exec=traybiff
+Icon=traybiff
+Terminal=false
+Type=Application
+X-MultipleArgs=false
+Categories=Qt
+GenericName=Tool to display mail
+StartupNotify=true

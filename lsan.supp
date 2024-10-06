@@ -1,0 +1,2 @@
+leak:libdbus-1 
+leak:libfontconfig
