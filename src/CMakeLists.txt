@@ -23,6 +23,7 @@ set(SRCS
 	systemtray/CTrayMenu.cpp
 	setup/CSetupDialog.cpp
 	setup/CConfig.cpp
+	setup/CKeyChain.cpp
 	protocols/CMailMonitor.cpp
 	protocols/CMailSocket.cpp
 	protocols/CCrypt.cpp
@@ -37,6 +38,7 @@ set(HDRS
 	systemtray/CTrayMenu.h
 	setup/CSetupDialog.h
 	setup/CConfig.h
+	setup/CKeyChain.h
 	protocols/CMailMonitor.h
 	protocols/CMailSocket.h
 	protocols/CCrypt.h
@@ -77,7 +79,8 @@ target_compile_definitions(traybiff PUBLIC
     -DAPPLICATION_NAME=${PROJECT_NAME}
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${QTMODULES} )
+include_directories(${QTKEYCHAIN_INCLUDE_DIRS}/qt6keychain)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${QTMODULES} ${QTKEYCHAIN_LIBRARIES})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     # Install desktop entry

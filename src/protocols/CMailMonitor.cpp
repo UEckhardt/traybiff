@@ -10,6 +10,25 @@
  */
 
 #include "CMailMonitor.h"
+#include "setup/CConfig.h"
+
+CMailMonitor::CMailMonitor(int polltime) : m_Running(false), m_Polltime(polltime)
+{
+  CConfig &inst = CConfig::instance();
+  connect(&inst, &CConfig::updatePassword, this, &CMailMonitor::updatePassword);
+}
+
+void CMailMonitor::updatePassword(const QString &mailbox, const QString &password)
+{
+  for (auto data : m_Data)
+  {
+    if (data->m_MailboxName == mailbox)
+    {
+      data->m_Server->updatePassword(password);
+      break;
+    }
+  }
+}
 
 void CMailMonitor::addServer(const QString &mailboxname, IMailProtocol *server)
 {

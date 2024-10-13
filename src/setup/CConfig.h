@@ -18,6 +18,7 @@
 #include <QSettings>
 #include <QString>
 #include <QVector>
+#include "CKeyChain.h"
 
 enum class IconType
 {
@@ -48,8 +49,9 @@ typedef struct
   QIcon m_IcType[static_cast<int>(IconType::icLast) + 1];
 } CONFIG_DATA_T;
 
-class CConfig
+class CConfig : public QObject
 {
+  Q_OBJECT
 public:
   static CConfig &instance()
   {
@@ -57,34 +59,61 @@ public:
     return instance;
   }
   virtual ~CConfig() {}
-  bool isConfigured()
+  bool isConfigured() const
   {
     return m_isConfigured;
   }
-  void getMailboxes(QVector<QString> &mailboxes);
+  /*
+   * Get a list of all passwords
+   */
+  void getMailboxes(QVector<QString> &mailboxes) const;
+  /*
+   * Add/update a new config
+   */
   void addConfig(const QString &mailboxname, PROTOCOLS protocol,
-                 const QString &user, const QString &password,
+                 const QString &user,
                  const QString &server, uint16_t port,
                  const QString &imap_mailbox);
+
+  /*
+   * Request to get password
+   */
+  void getPassword(const QString &mailboxname)
+  {
+    m_KeyChain.readKey(mailboxname);
+  }
+  /*
+   * Set new password
+   */
+  void setPassword(const QString &mailboxname, const QString &passwd)
+  {
+    m_KeyChain.writeKey(mailboxname, passwd);
+    keyRestored(mailboxname, passwd);
+  }
+  /*
+   * Delete a configuration
+   */
   void deleteConfig(const QString &mailboxname);
   void getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                  QString &user, QString &password, QString &server,
-                 uint16_t &port, QString &imap_mailbox);
+                 uint16_t &port, QString &imap_mailbox) const;
   void save();
   void beginUpdate();
   void abortUpdate();
 
   void saveIconDir(const QString &dir);
-  QString getIconDir();
-  QIcon getIcon(const IconType &type)
+  QString getIconDir() const;
+
+  QIcon getIcon(const IconType &type) const
   {
     return (m_CurrentConfig.m_IcType[static_cast<int>(type)]);
   }
+
   void setIcon(const IconType &type, const QIcon &newIcon)
   {
     m_CurrentConfig.m_IcType[static_cast<int>(type)] = newIcon;
   }
-  QString getIconName(const IconType &type)
+  QString getIconName(const IconType &type) const
   {
     return m_CurrentConfig.m_IcTypeFileName[static_cast<int>(type)];
   }
@@ -98,11 +127,19 @@ public:
   bool m_DockInPanel = false;
   bool m_UseSessionManangement = false;
 
+signals:
+  void updatePassword(const QString &mailbox, const QString &password);
+
+private slots:
+  void keyRestored(const QString &key, const QString &value);
+  void keyError(const QString &errorText);
+  void keyStored(const QString &key);
+
 private:
   CConfig();
   CConfig(const CConfig &);
   CConfig &operator=(const CConfig &);
-  int findMailbox(const QString &mailboxname);
+  int findMailbox(const QString &mailboxname) const;
   void saveIconName(QSettings &settings, const IconType &type,
                     const QString &key);
   void saveIcon(QIcon &icon, QString &savename, const QString &name);
@@ -114,6 +151,7 @@ private:
 
   CONFIG_DATA_T m_CurrentConfig;
   CONFIG_DATA_T m_OldConfig;
+  CKeyChain m_KeyChain;
 
   static inline const QString KEY_ICNEWMAIL = "icon_newmail";
   static inline const QString KEY_ICNOMAIL = "icon_nomail";
@@ -139,7 +177,6 @@ private:
   static inline const QString KEY_MAILBOX_NAME = "mailboxname";
   static inline const QString KEY_PROTOCOL = "protocol";
   static inline const QString KEY_USER_NAME = "user_name";
-  static inline const QString KEY_PASSWORD = "password";
   static inline const QString KEY_SERVER = "server";
   static inline const QString KEY_PORT = "port";
   static inline const QString KEY_IMAP_MAILBOX = "imap_mailbox";

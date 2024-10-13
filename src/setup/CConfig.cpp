@@ -11,9 +11,13 @@
 
 #include "CConfig.h"
 
-CConfig::CConfig()
+CConfig::CConfig() : m_KeyChain(this)
 {
   QSettings settings;
+
+  connect(&m_KeyChain, &CKeyChain::keyRestored, this, &CConfig::keyRestored);
+  connect(&m_KeyChain, &CKeyChain::keyStored, this, &CConfig::keyStored);
+  connect(&m_KeyChain, &CKeyChain::error, this, &CConfig::keyError);
 
   qInfo() << "Config file " << settings.fileName();
 
@@ -42,20 +46,42 @@ CConfig::CConfig()
   for (int j = 0; j < servers; j++)
   {
     settings.setArrayIndex(j);
-    QString mailboxName = settings.value(KEY_MAILBOX_NAME, QString("")).toString();
+    const QString &mailboxName = settings.value(KEY_MAILBOX_NAME, QString("")).toString();
     int protocol = settings.value(KEY_PROTOCOL, QVariant((int)PROTO_POP3)).toInt();
-    QString user = settings.value(KEY_USER_NAME, QString("")).toString();
-    QString password = settings.value(KEY_PASSWORD, QString("")).toString();
-    QString server = settings.value(KEY_SERVER, QString("")).toString();
-    QString imap_mailbox = settings.value(KEY_IMAP_MAILBOX, QString("")).toString();
+    const QString &user = settings.value(KEY_USER_NAME, QString("")).toString();
+    const QString &server = settings.value(KEY_SERVER, QString("")).toString();
+    const QString &imap_mailbox = settings.value(KEY_IMAP_MAILBOX, QString("")).toString();
     int port = settings.value(KEY_PORT, 0).toInt();
-    qInfo("Reading Mailbox %s %s", qUtf8Printable(mailboxName),
-          qUtf8Printable(user));
-    addConfig(mailboxName, (PROTOCOLS)protocol, user, password, server,
+    qInfo() << "Reading Mailbox" << mailboxName << " " << user;
+    addConfig(mailboxName, (PROTOCOLS)protocol, user, server,
               port, imap_mailbox);
+    getPassword(mailboxName);
   }
   settings.endArray();
   settings.endGroup();
+}
+
+void CConfig::keyError(const QString &errorText)
+{
+  qWarning() << "Error getting password " << errorText;
+}
+
+void CConfig::keyStored(const QString &key)
+{
+  qDebug() << "Key " << key << " stored";
+}
+
+void CConfig::keyRestored(const QString &key, const QString &value)
+{
+  qDebug() << "Restore Passwd " << key;
+  int idx = findMailbox(key);
+  if (idx == -1)
+  {
+    qInfo() << "keyRestored " << key << "not found";
+    return;
+  }
+  m_CurrentConfig.m_MailboxConfig[idx].m_Password = value;
+  updatePassword(key, value);
 }
 
 QIcon CConfig::getIconInfo(QSettings &settings, const QString &key,
@@ -109,7 +135,7 @@ QIcon CConfig::ResetIcon(const IconType &type)
   return m_CurrentConfig.m_IcType[static_cast<int>(type)];
 }
 
-int CConfig::findMailbox(const QString &mailboxname)
+int CConfig::findMailbox(const QString &mailboxname) const
 {
   for (int i = 0; i < m_CurrentConfig.m_MailboxConfig.size(); ++i)
   {
@@ -122,8 +148,7 @@ int CConfig::findMailbox(const QString &mailboxname)
 }
 
 void CConfig::addConfig(const QString &mailboxname, PROTOCOLS protocol,
-                        const QString &user, const QString &password,
-                        const QString &server, uint16_t port,
+                        const QString &user, const QString &server, uint16_t port,
                         const QString &imap_mailbox)
 {
   MAILBOX_CONFIG_T config;
@@ -137,7 +162,6 @@ void CConfig::addConfig(const QString &mailboxname, PROTOCOLS protocol,
   config.m_MailboxName = mailboxname;
   config.m_Protocol = protocol;
   config.m_User = user;
-  config.m_Password = password;
   config.m_Server = server;
   config.m_Port = port;
   config.m_ImapMailBox = imap_mailbox;
@@ -159,11 +183,12 @@ void CConfig::deleteConfig(const QString &mailboxname)
   int idx = findMailbox(mailboxname);
   if (idx != -1)
   {
+    m_KeyChain.deleteKey(mailboxname);
     m_CurrentConfig.m_MailboxConfig.remove(idx);
   }
 }
 
-void CConfig::getMailboxes(QVector<QString> &mailboxes)
+void CConfig::getMailboxes(QVector<QString> &mailboxes) const
 {
   mailboxes.clear();
   for (int i = 0; i < m_CurrentConfig.m_MailboxConfig.size(); ++i)
@@ -174,7 +199,7 @@ void CConfig::getMailboxes(QVector<QString> &mailboxes)
 
 void CConfig::getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                         QString &user, QString &password, QString &server,
-                        uint16_t &port, QString &imap_mailbox)
+                        uint16_t &port, QString &imap_mailbox) const
 {
   int idx = findMailbox(mailboxname);
   if (idx == -1)
@@ -236,21 +261,20 @@ void CConfig::save()
   settings.beginWriteArray(ARRAY_MAILBOX);
   for (int i = 0; i < m_CurrentConfig.m_MailboxConfig.size(); ++i)
   {
+    const QString &mbName = m_CurrentConfig.m_MailboxConfig.at(i).m_MailboxName;
     settings.setArrayIndex(i);
-    settings.setValue(KEY_MAILBOX_NAME,
-                      m_CurrentConfig.m_MailboxConfig.at(i).m_MailboxName);
+    settings.setValue(KEY_MAILBOX_NAME, mbName);
     settings.setValue(KEY_PROTOCOL,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_Protocol);
     settings.setValue(KEY_USER_NAME,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_User);
-    settings.setValue(KEY_PASSWORD,
-                      m_CurrentConfig.m_MailboxConfig.at(i).m_Password);
     settings.setValue(KEY_SERVER,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_Server);
     settings.setValue(KEY_PORT,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_Port);
     settings.setValue(KEY_IMAP_MAILBOX,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_ImapMailBox);
+    m_KeyChain.writeKey(mbName, m_CurrentConfig.m_MailboxConfig.at(i).m_Password);
   }
   settings.endArray();
   settings.endGroup();
@@ -264,8 +288,7 @@ void CConfig::saveIconDir(const QString &dir)
   settings.endGroup();
 }
 
-QString
-CConfig::getIconDir()
+QString CConfig::getIconDir() const
 {
   QSettings settings;
   settings.beginGroup(GROUP_SESSION);

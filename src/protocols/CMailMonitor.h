@@ -32,9 +32,8 @@ class CMailMonitor : public QThread
 {
   Q_OBJECT
 public:
-  CMailMonitor(int polltime) : m_Running(false), m_Polltime(polltime)
-  {
-  }
+  CMailMonitor(int polltime);
+
   virtual ~CMailMonitor()
   {
     halt();
@@ -70,6 +69,7 @@ private:
 private slots:
   void handleMailError(IMailProtocol *server, const QString &errtxt);
   void handleResultReady(int configurationidx, int numUnread, int numRead);
+  void updatePassword(const QString &mailbox, const QString &password);
 };
 
 #endif /* CMAILMONITOR_H_ */

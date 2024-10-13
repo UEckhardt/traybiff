@@ -14,6 +14,7 @@
 
 #include <QObject>
 #include <QString>
+#include <unistd.h>
 
 class IMailProtocol : public QObject
 {
@@ -46,6 +47,10 @@ public:
   {
     return m_ConfigurationIdx;
   }
+  /*
+   * Set a new password
+   */
+  virtual void updatePassword(const QString newpasswd) = 0;
 
 public slots:
   virtual void doWork(void) = 0;
@@ -59,12 +64,19 @@ protected:
   QString m_Server;
   int m_ConfigurationIdx = 0;
 
+  /*
+   * Set an error text
+   */
   void setError(const QString &err)
   {
     m_Error = err;
     emit mailError(this, err);
+    sleep(1); /* Delay in case of errors */
   }
 
+  /*
+   * Clear error text
+   */
   void clearError()
   {
     m_Error.clear();

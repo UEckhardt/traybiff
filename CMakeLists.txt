@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.25)
 
 project(traybiff
-        VERSION 0.4.0
+        VERSION 0.5.1
         LANGUAGES CXX)
 
 include(FeatureSummary)
@@ -21,9 +21,12 @@ find_package(Qt6Core ${QT_MIN_VERSION} REQUIRED)
 find_package(Qt6Gui ${QT_MIN_VERSION} REQUIRED)
 find_package(Qt6Network ${QT_MIN_VERSION} REQUIRED)
 find_package(Qt6Widgets ${QT_MIN_VERSION} REQUIRED)
+find_package(Qt6Keychain 0.14.0 REQUIRED)
+
 if (NOT EXISTS /usr/lib64/qt6/plugins/iconengines/libqsvgicon.so)
   message(WARNING "libqsvgicon seems not be present")
 endif()
+
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 

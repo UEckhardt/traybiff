@@ -17,10 +17,6 @@ static uint32_t default_ports[PROTO_LAST] = {
     993, // PROTO_IMAPS
 };
 
-#define TCHANG(wi)                                        \
-  connect(wi, SIGNAL(textChanged(const QString &)), this, \
-          SLOT(on_InputChanged(const QString &)))
-
 CSetupDialog::CSetupDialog(QWidget *parent) : QDialog(parent)
 {
   CConfig &cfg = CConfig::instance();
@@ -45,12 +41,17 @@ CSetupDialog::CSetupDialog(QWidget *parent) : QDialog(parent)
   checkBoxDockInPanel->setChecked(cfg.m_DockInPanel);
   checkBoxUseSessionManagement->setChecked(cfg.m_UseSessionManangement);
 
-  TCHANG(lineEditName);
-  TCHANG(lineEditUser);
-  TCHANG(lineEditPassword);
-  TCHANG(lineEditServer);
-  TCHANG(lineEditPort);
-  TCHANG(lineEditIMAPMailbox);
+  auto con_line_edit = [this](QLineEdit *li)
+  {
+    connect(li, &QLineEdit::textChanged, this,
+            &CSetupDialog::on_InputChanged);
+  };
+  con_line_edit(lineEditName);
+  con_line_edit(lineEditUser);
+  con_line_edit(lineEditPassword);
+  con_line_edit(lineEditServer);
+  con_line_edit(lineEditPort);
+  con_line_edit(lineEditIMAPMailbox);
 
   QVector<QString> mailboxes;
   cfg.getMailboxes(mailboxes);
@@ -172,17 +173,18 @@ void CSetupDialog::save()
   bool ok = true;
   CConfig &cfg = CConfig::instance();
   int proto = comboBoxProtocol->currentData().toInt();
-  QString mailboxname = lineEditName->text();
-  QString user = lineEditUser->text();
-  QString password = lineEditPassword->text();
-  QString server = lineEditServer->text();
-  QString imap_mailbox = lineEditIMAPMailbox->text();
+  const QString &mailboxname = lineEditName->text();
+  const QString &user = lineEditUser->text();
+  const QString &password = lineEditPassword->text();
+  const QString &server = lineEditServer->text();
+  const QString &imap_mailbox = lineEditIMAPMailbox->text();
   uint16_t port = lineEditPort->text().toInt(&ok);
 
   if (inputOk())
   {
-    cfg.addConfig(mailboxname, (PROTOCOLS)proto, user, password, server,
+    cfg.addConfig(mailboxname, (PROTOCOLS)proto, user, server,
                   port, imap_mailbox);
+    cfg.setPassword(mailboxname, password);
     QList<QListWidgetItem *> items = listWidgetServers->findItems(mailboxname, Qt::MatchExactly);
     if (items.size() == 0)
     {

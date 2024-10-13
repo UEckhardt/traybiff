@@ -114,8 +114,7 @@ void CPop3::doWork(void)
   return;
 }
 
-CPop3::Pop3Return
-CPop3::readChall(QString &result)
+CPop3::Pop3Return CPop3::readChall(QString &result)
 {
   QStringList list;
   if (!readLine(list))
@@ -151,8 +150,7 @@ void CPop3::end()
   m_Socket->close();
 }
 
-CPop3::Pop3Return
-CPop3::readCapa()
+CPop3::Pop3Return CPop3::readCapa()
 {
   QString response = m_Socket->readLine();
   while ((!response.isNull()) && (response.left(1) != "."))

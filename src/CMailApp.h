@@ -20,8 +20,7 @@ public:
   CMailApp(CTrayMenu &menu, bool debug_protocol);
   ~CMailApp() {}
 
-  void
-  halt(void)
+  void halt(void)
   {
     m_Monitor.halt();
     m_Monitor.quit();

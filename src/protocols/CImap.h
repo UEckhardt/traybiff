@@ -48,6 +48,13 @@ private:
   bool m_StartTLS = false;
   bool m_AllowSelfSigned = false;
   bool m_DebugProtocol;
+  /*
+   * Set a new password
+   */
+  void updatePassword(const QString newpasswd) override
+  {
+    m_Password = newpasswd;
+  }
 
 public slots:
   void doWork(void) override;

@@ -514,7 +514,7 @@
              </font>
             </property>
             <property name="text">
-             <string>&lt;b&gt;Qbiff&lt;/b&gt; Version</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;TrayBiff&lt;/span&gt; Version&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
             <property name="textFormat">
              <enum>Qt::RichText</enum>

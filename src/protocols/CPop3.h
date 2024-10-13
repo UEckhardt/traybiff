@@ -58,6 +58,14 @@ private:
   bool m_AllowSelfSigned = false;
   QString m_ChallApop;
 
+  /*
+   * Set a new password
+   */
+  void updatePassword(const QString newpasswd) override
+  {
+    m_Password = newpasswd;
+  }
+
 public slots:
   void doWork(void) override;
 private slots:

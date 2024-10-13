@@ -6,5 +6,6 @@
     <file>icons/32x32/hi-app-kbiff.png</file>
     <file>icons/64x64/traybiff.png</file>
     <file>icons/128x128/traybiff.png</file>
+    <file>icons/traybiff.svg</file>
   </qresource>
 </RCC>

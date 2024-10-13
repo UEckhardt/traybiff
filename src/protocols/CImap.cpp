@@ -333,7 +333,16 @@ bool CImap::login()
     end();
     return false;
   }
-
+  list.takeFirst();
+  const QString s = list.takeFirst();
+  if (s != "OK")
+  {
+    const QString err = "Login failed " + list.join(' ');
+    qCritical() << err;
+    setError(err);
+    end();
+    return false;
+  }
   return true;
 }
 
