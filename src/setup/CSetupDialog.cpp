@@ -108,7 +108,7 @@ void CSetupDialog::done(int result)
   CConfig &cfg = CConfig::instance();
   if (result == Accepted)
   {
-    qInfo("OK");
+    qInfo("CSetupDialog::OK");
     save();
     cfg.m_PollTime = spinBoxPoll->value();
     cfg.m_DockInPanel = checkBoxDockInPanel->isChecked();

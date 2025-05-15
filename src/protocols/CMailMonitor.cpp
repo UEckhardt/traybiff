@@ -12,9 +12,10 @@
 #include "CMailMonitor.h"
 #include "setup/CConfig.h"
 
-CMailMonitor::CMailMonitor(int polltime) : m_Running(false), m_Polltime(polltime)
+CMailMonitor::CMailMonitor() : m_Running(false)
 {
   CConfig &inst = CConfig::instance();
+  m_Polltime = inst.m_PollTime;
   connect(&inst, &CConfig::updatePassword, this, &CMailMonitor::updatePassword);
 }
 
@@ -58,7 +59,7 @@ void CMailMonitor::run()
 {
   int i;
   m_Running = true;
-  qDebug("Start Mail Monitor");
+  qDebug() << "Start Mail Monitor " << m_Polltime;
 
   while (m_Running)
   {
@@ -74,6 +75,10 @@ void CMailMonitor::run()
   for (i = 0; i < m_Data.size(); i++)
   {
     m_Data[i]->m_Thread->quit();
+  }
+
+  for (i = 0; i < m_Data.size(); i++)
+  {
     m_Data[i]->m_Thread->wait(1000);
     delete (m_Data[i]->m_Thread);
     delete (m_Data[i]->m_Server);

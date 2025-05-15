@@ -59,14 +59,14 @@ void CMailApp::loadConfig(void)
 
   qDebug() << "connect monitor";
 
+  m_Monitor.updatePollTime(cfg.m_PollTime);
   m_Monitor.start();
   qDebug() << "monitor running";
 }
 
-CMailApp::CMailApp(CTrayMenu &menu, bool debug_protocol) : m_Monitor(30), m_Traymenu(menu),
+CMailApp::CMailApp(CTrayMenu &menu, bool debug_protocol) : m_Monitor(), m_Traymenu(menu),
                                                            m_DebugProtocol(debug_protocol)
 {
-
   if (!connect(&m_Monitor, &CMailMonitor::updateResult, this,
                &CMailApp::updateResult))
   {
@@ -100,7 +100,7 @@ void CMailApp::saveStateRequest(QSessionManager &manager)
   CConfig &cfg = CConfig::instance();
   if (cfg.m_UseSessionManangement)
   {
-    manager.setRestartHint(QSessionManager::RestartIfRunning);
+    manager.setRestartHint(QSessionManager::RestartAnyway);
   }
   else
   {

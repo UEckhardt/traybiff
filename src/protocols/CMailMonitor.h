@@ -32,7 +32,7 @@ class CMailMonitor : public QThread
 {
   Q_OBJECT
 public:
-  CMailMonitor(int polltime);
+  CMailMonitor();
 
   virtual ~CMailMonitor()
   {
@@ -47,15 +47,20 @@ public:
     m_Running = false;
   }
 
-  QString getMailboxName(int configidx)
+  QString getMailboxName(int configidx) const
   {
     return m_Data[configidx]->m_MailboxName;
   }
 
-  const QVector<SMailData *> &getData(void)
+  const QVector<SMailData *> &getData(void) const
   {
     return (m_Data);
   }
+
+  void updatePollTime(int tm) {
+    m_Polltime = tm;
+  }
+  
 signals:
   void updateResult(void);
   void mailError(IMailProtocol *server, const QString &errtxt);
