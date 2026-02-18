@@ -67,7 +67,7 @@ signals:
   void doWork(void);
 
 private:
-  std::atomic_bool m_Running;
+  volatile bool m_Running;
   int m_Polltime;
   QVector<SMailData *> m_Data;
 

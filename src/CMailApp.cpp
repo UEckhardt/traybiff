@@ -1,7 +1,7 @@
 /*
  * CMailApp.cpp
  *
- * Copyright (C) 2021-2024 Ulrich Eckhardt <uli@uli-eckhardt.de>
+ * Copyright (C) 2021-2026 Ulrich Eckhardt <uli@uli-eckhardt.de>
  *
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.

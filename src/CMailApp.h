@@ -1,7 +1,7 @@
 /*
  * CMailApp.h
  *
- * Copyright (C) 2021-2022 Ulrich Eckhardt <uli@uli-eckhardt.de>
+ * Copyright (C) 2021-2026 Ulrich Eckhardt <uli@uli-eckhardt.de>
  *
  * This code is distributed under the terms and conditions of the
  * GNU GENERAL PUBLIC LICENSE. See the file COPYING for details.
@@ -24,7 +24,7 @@ public:
   {
     m_Monitor.halt();
     m_Monitor.quit();
-    m_Monitor.wait(2000);
+    m_Monitor.wait(500);
   }
 
 private:

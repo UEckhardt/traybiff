@@ -11,10 +11,12 @@
 
 #include "CMailMonitor.h"
 #include "setup/CConfig.h"
+#include <chrono>
+#include <thread>
 
 CMailMonitor::CMailMonitor() : m_Running(false)
 {
-  CConfig &inst = CConfig::instance();
+  auto &inst = CConfig::instance();
   m_Polltime = inst.m_PollTime;
   connect(&inst, &CConfig::updatePassword, this, &CMailMonitor::updatePassword);
 }
@@ -66,9 +68,9 @@ void CMailMonitor::run()
     emit doWork();
 
     i = 0;
-    while (m_Running && i < m_Polltime)
+    while (m_Running && (i < (m_Polltime * 10)))
     {
-      sleep(1);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
       i++;
     }
   }
