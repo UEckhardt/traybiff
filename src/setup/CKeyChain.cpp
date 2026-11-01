@@ -2,59 +2,59 @@
 
 #include "CKeyChain.h"
 
-CKeyChain::CKeyChain(QObject *parent) : QObject(parent),
-                                        m_readCredentialJob(QLatin1String("TrayBiff")),
-                                        m_writeCredentialJob(QLatin1String("TrayBiff")),
-                                        m_deleteCredentialJob(QLatin1String("TrayBiff"))
+CKeyChain::CKeyChain(QObject *parent) : QObject(parent)
 {
-    m_readCredentialJob.setAutoDelete(false);
-    m_writeCredentialJob.setAutoDelete(false);
-    m_deleteCredentialJob.setAutoDelete(false);
 }
 
 void CKeyChain::readKey(const QString &key)
 {
-    m_readCredentialJob.setKey(key);
+    auto *job = new QKeychain::ReadPasswordJob(QLatin1String("TrayBiff"), this);
+    job->setAutoDelete(true);
+    job->setKey(key);
 
-    QObject::connect(&m_readCredentialJob, &QKeychain::ReadPasswordJob::finished, [=]()
+    QObject::connect(job, &QKeychain::ReadPasswordJob::finished, this, [this, job, key]()
                      {
-        if (m_readCredentialJob.error()) {
-            emit error(tr("Read key failed: %1").arg(qPrintable(m_readCredentialJob.errorString())));
+        if (job->error()) {
+            emit error(tr("Read key failed: %1").arg(qPrintable(job->errorString())));
             return;
         }
-        emit keyRestored(key, m_readCredentialJob.textData()); });
+        emit keyRestored(key, job->textData()); });
 
-    m_readCredentialJob.start();
+    job->start();
 }
 
 void CKeyChain::writeKey(const QString &key, const QString &value)
 {
-    m_writeCredentialJob.setKey(key);
+    auto *job = new QKeychain::WritePasswordJob(QLatin1String("TrayBiff"), this);
+    job->setAutoDelete(true);
+    job->setKey(key);
 
-    QObject::connect(&m_writeCredentialJob, &QKeychain::WritePasswordJob::finished, [=]()
+    QObject::connect(job, &QKeychain::WritePasswordJob::finished, this, [this, job, key]()
                      {
-        if (m_writeCredentialJob.error()) {
-            emit error(tr("Write key failed: %1").arg(qPrintable(m_writeCredentialJob.errorString())));
+        if (job->error()) {
+            emit error(tr("Write key failed: %1").arg(qPrintable(job->errorString())));
             return;
         }
 
         emit keyStored(key); });
 
-    m_writeCredentialJob.setTextData(value);
-    m_writeCredentialJob.start();
+    job->setTextData(value);
+    job->start();
 }
 
 void CKeyChain::deleteKey(const QString &key)
 {
-    m_deleteCredentialJob.setKey(key);
+    auto *job = new QKeychain::DeletePasswordJob(QLatin1String("TrayBiff"), this);
+    job->setAutoDelete(true);
+    job->setKey(key);
 
-    QObject::connect(&m_deleteCredentialJob, &QKeychain::DeletePasswordJob::finished, [=]()
+    QObject::connect(job, &QKeychain::DeletePasswordJob::finished, this, [this, job, key]()
                      {
-        if (m_deleteCredentialJob.error()) {
-            emit error(tr("Delete key failed: %1").arg(qPrintable(m_deleteCredentialJob.errorString())));
+        if (job->error()) {
+            emit error(tr("Delete key failed: %1").arg(qPrintable(job->errorString())));
             return;
         }
         emit keyDeleted(key); });
 
-    m_deleteCredentialJob.start();
+    job->start();
 }

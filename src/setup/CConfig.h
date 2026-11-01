@@ -164,7 +164,7 @@ private:
                                                                                  KEY_ICSTOPPED};
 
   static inline const char
-      *DEFAULT_THEME_ICONS[static_cast<int>(IconType::icLast) + 1] = {"mail-read", "mail-unread", "dialog-warning", "mail-replied",
+      *DEFAULT_THEME_ICONS[static_cast<int>(IconType::icLast) + 1] = {"mail-unread", "mail-read", "dialog-warning", "mail-replied",
                                                                       "network-offline"};
 
   static inline const QString FALLBACK_ICON = ":/icons/32x32/hi-app-kbiff.png";

@@ -82,6 +82,13 @@ bool CImap::readResponse(QStringList &list, bool &last)
     setError(err);
     return false;
   }
+  if (list.isEmpty())
+  {
+    const QString err = "Protocol Error, empty response";
+    qCritical() << err;
+    setError(err);
+    return false;
+  }
   QString resp = list.takeFirst();
   if (resp == '*')
   {
@@ -109,10 +116,12 @@ bool CImap::readResponse(QStringList &list, bool &last)
 bool CImap::getMail(int &unread, int &read)
 {
   QStringList list;
-  bool last;
-  bool ok;
-  int nummails = -1;
+  bool last = false;
+  bool ok = false;
+  int nummails = 0;
 
+  unread = 0;
+  read = 0;
   clearError();
   if (!isConnected())
   {
@@ -133,7 +142,7 @@ bool CImap::getMail(int &unread, int &read)
     {
       break;
     }
-    if (list.at(1) == "EXISTS")
+    if ((list.size() >= 2) && (list.at(1) == "EXISTS"))
     {
       nummails = list.at(0).toInt(&ok);
       if (!ok)
@@ -145,7 +154,7 @@ bool CImap::getMail(int &unread, int &read)
       }
     }
   }
-  if (!last)
+  if (!last || list.isEmpty() || (list.at(0) != "OK"))
   {
     const QString err = "protocol error on SELECT";
     qCritical() << err;
@@ -163,15 +172,11 @@ bool CImap::getMail(int &unread, int &read)
     {
       break;
     }
-    if (list.at(0) == "SEARCH")
+    if (!list.isEmpty() && (list.at(0) == "SEARCH"))
     {
-      if (list.size() == 1)
+      for (int i = 1; i < list.size(); ++i)
       {
-        unread = 0;
-      }
-      else
-      {
-        unread = list.at(1).toInt(&ok);
+        list.at(i).toInt(&ok);
         if (!ok)
         {
           const QString err = "invalid number of read e-mails";
@@ -180,9 +185,10 @@ bool CImap::getMail(int &unread, int &read)
           return false;
         }
       }
+      unread += list.size() - 1;
     }
   }
-  if (!last)
+  if (!last || list.isEmpty() || (list.at(0) != "OK"))
   {
     const QString err = "protocol error on SEARCH";
     qCritical() << err;
@@ -230,8 +236,8 @@ void CImap::doWork(void)
     return;
   }
 
-  int unread;
-  int read;
+  int unread = 0;
+  int read = 0;
   if (getMail(unread, read))
   {
     emit resultReady(getConfigurationIndex(), unread, read);
@@ -249,6 +255,15 @@ bool CImap::startProtocol()
   if (!readLine(list))
   {
     const QString err = "Error on connection";
+    qCritical() << err;
+    setError(err);
+    end();
+    return false;
+  }
+
+  if (list.size() < 2)
+  {
+    const QString err = "Protocol error";
     qCritical() << err;
     setError(err);
     end();
@@ -303,12 +318,24 @@ bool CImap::login()
 {
   QString str;
   QStringList list;
+  bool last = false;
 
   if (m_StartTLS)
   {
     str = "STARTTLS";
-    writeCmd(str);
-    if (!readLine(list))
+    if (!writeCmd(str))
+    {
+      end();
+      return false;
+    }
+    while (readResponse(list, last))
+    {
+      if (last)
+      {
+        break;
+      }
+    }
+    if (!last || list.isEmpty() || (list.at(0) != "OK"))
     {
       qWarning("Error on starttls");
     }
@@ -320,12 +347,32 @@ bool CImap::login()
         m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
       }
       m_Socket->startClientEncryption();
+      if (!m_Socket->waitForEncrypted(TIMEOUT))
+      {
+        const QString err = "TLS handshake failed: " + m_Socket->errorString();
+        qCritical() << err;
+        setError(err);
+        end();
+        return false;
+      }
     }
   }
   // Plaintext authentication
   str = "LOGIN " + m_User + " " + m_Password;
-  writeCmd(str);
-  if (!readLine(list))
+  if (!writeCmd(str))
+  {
+    end();
+    return false;
+  }
+  last = false;
+  while (readResponse(list, last))
+  {
+    if (last)
+    {
+      break;
+    }
+  }
+  if (!last || list.isEmpty())
   {
     const QString err = "Read error during authentication";
     qCritical() << err;
@@ -333,7 +380,6 @@ bool CImap::login()
     end();
     return false;
   }
-  list.takeFirst();
   const QString s = list.takeFirst();
   if (s != "OK")
   {

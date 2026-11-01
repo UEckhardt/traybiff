@@ -26,7 +26,7 @@ bool CMailSocket::isConnected()
 
 bool CMailSocket::readLine(QString &result)
 {
-  if (m_Socket->bytesAvailable() == 0)
+  while (!m_Socket->canReadLine())
   {
     if (!m_Socket->waitForReadyRead(TIMEOUT))
     {
@@ -40,7 +40,10 @@ bool CMailSocket::readLine(QString &result)
     }
   }
   result = m_Socket->readLine();
-  result.chop(2);
+  while (result.endsWith('\r') || result.endsWith('\n'))
+  {
+    result.chop(1);
+  }
 
   if (m_Debug)
   {
@@ -57,7 +60,7 @@ bool CMailSocket::readLine(QStringList &result)
     return false;
   }
 
-  result = line.split(QChar(' '));
+  result = line.split(QChar(' '), Qt::SkipEmptyParts);
   if (result.isEmpty())
   {
     const QString err = "Protocol Error, empty line";

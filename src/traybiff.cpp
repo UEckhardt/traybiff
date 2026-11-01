@@ -60,8 +60,8 @@ int main(int argc, char **argv)
 {
   qInstallMessageHandler(logMsg);
   QCommandLineParser parser;
-  parser.addHelpOption();
-  parser.addVersionOption();
+  const QCommandLineOption helpOpt = parser.addHelpOption();
+  const QCommandLineOption verOpt = parser.addVersionOption();
   const QCommandLineOption altconfig(
       QStringList() << "c" << "alt-config",
       QCoreApplication::translate("main", "Use an alternate config file."),
@@ -71,10 +71,16 @@ int main(int argc, char **argv)
       QStringList() << "d" << "debug",
       QCoreApplication::translate("main", "Debug protocol."));
   parser.addOption(dbg);
-  parser.addVersionOption();
   parser.setApplicationDescription(QObject::tr("TrayBiff mail monitor"));
 
-  if (!parser.isSet(dbg))
+  QStringList rawArgs;
+  for (int i = 0; i < argc; ++i)
+  {
+    rawArgs.append(QString::fromLocal8Bit(argv[i]));
+  }
+  const bool parseOk = parser.parse(rawArgs);
+
+  if (parseOk && !parser.isSet(dbg) && !parser.isSet(helpOpt) && !parser.isSet(verOpt))
   {
     pid_t pid;
     // Fork the parent process

@@ -131,6 +131,13 @@ CPop3::Pop3Return CPop3::readChall(QString &result)
   QString first = list.at(0);
   if (first == "+")
   {
+    if (list.size() < 2)
+    {
+      const QString err = "Protocol Error, missing challenge";
+      qCritical() << err;
+      setError(err);
+      return POP3_ERR;
+    }
     result = list.at(1);
     qDebug() << "readChall " << result;
     return POP3_OK;
@@ -152,8 +159,12 @@ void CPop3::end()
 
 CPop3::Pop3Return CPop3::readCapa()
 {
-  QString response = m_Socket->readLine();
-  while ((!response.isNull()) && (response.left(1) != "."))
+  QString response;
+  if (!readLine(response))
+  {
+    return POP3_ERR;
+  }
+  while (response != ".")
   {
     if (m_Debug)
     {
@@ -167,7 +178,10 @@ CPop3::Pop3Return CPop3::readCapa()
     {
       m_StartTLS = true;
     }
-    response = m_Socket->readLine();
+    if (!readLine(response))
+    {
+      return POP3_ERR;
+    }
   }
   return (POP3_OK);
 }
@@ -207,6 +221,14 @@ bool CPop3::login()
           m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
         }
         m_Socket->startClientEncryption();
+        if (!m_Socket->waitForEncrypted(TIMEOUT))
+        {
+          const QString err = "TLS handshake failed: " + m_Socket->errorString();
+          qCritical() << err;
+          setError(err);
+          end();
+          return false;
+        }
       }
     }
   }
@@ -308,6 +330,13 @@ bool CPop3::getMail(int &unread, int &read)
   {
     return false;
   }
+  if (list.isEmpty())
+  {
+    const QString err = "invalid number of e-mails";
+    qCritical() << err;
+    setError(err);
+    return false;
+  }
   bool ok = false;
   unread = list.at(0).toInt(&ok);
   if (!ok)
@@ -327,16 +356,19 @@ bool CPop3::startProtocol()
 
   if (readResponse(list))
   {
-    QString last = list.last();
-    QRegularExpression rx("<[a-zA-Z0-9_+.-=]+@[a-zA-Z0-9_+.-]+>");
-
-    if (last.contains(rx))
+    if (!list.isEmpty())
     {
-      m_ChallApop = last;
-      m_AuthApop = true;
-      if (m_Debug)
+      QString last = list.last();
+      QRegularExpression rx("<[a-zA-Z0-9_+.-=]+@[a-zA-Z0-9_+.-]+>");
+
+      if (last.contains(rx))
       {
-        qDebug() << "APOP " << m_ChallApop;
+        m_ChallApop = last;
+        m_AuthApop = true;
+        if (m_Debug)
+        {
+          qDebug() << "APOP " << m_ChallApop;
+        }
       }
     }
 
