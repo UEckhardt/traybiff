@@ -54,6 +54,7 @@ private:
   void updatePassword(const QString &newpasswd) override
   {
     m_Password = newpasswd;
+    m_PasswordReady = true;
   }
 
 public slots:

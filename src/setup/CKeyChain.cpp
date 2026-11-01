@@ -15,6 +15,10 @@ void CKeyChain::readKey(const QString &key)
     QObject::connect(job, &QKeychain::ReadPasswordJob::finished, this, [this, job, key]()
                      {
         if (job->error()) {
+            if (job->error() == QKeychain::EntryNotFound) {
+                emit keyRestored(key, QString());
+                return;
+            }
             emit error(tr("Read key failed: %1").arg(qPrintable(job->errorString())));
             return;
         }

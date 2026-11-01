@@ -47,6 +47,16 @@ public:
   {
     return m_ConfigurationIdx;
   }
+
+  void setPasswordReady(bool ready)
+  {
+    m_PasswordReady = ready;
+  }
+
+  bool isPasswordReady(void) const
+  {
+    return m_PasswordReady;
+  }
   /*
    * Set a new password
    */
@@ -63,6 +73,7 @@ protected:
   QString m_Error;
   QString m_Server;
   int m_ConfigurationIdx = 0;
+  bool m_PasswordReady = false;
 
   /*
    * Set an error text

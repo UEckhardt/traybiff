@@ -82,6 +82,7 @@ void CConfig::keyRestored(const QString &key, const QString &value)
     return;
   }
   m_CurrentConfig.m_MailboxConfig[idx].m_Password = value;
+  m_CurrentConfig.m_MailboxConfig[idx].m_PasswordReady = true;
   updatePassword(key, value);
 }
 
@@ -172,6 +173,7 @@ void CConfig::addConfig(const QString &mailboxname, PROTOCOLS protocol,
   if (idx != -1)
   {
     config.m_Password = m_CurrentConfig.m_MailboxConfig[idx].m_Password;
+    config.m_PasswordReady = m_CurrentConfig.m_MailboxConfig[idx].m_PasswordReady;
     m_CurrentConfig.m_MailboxConfig[idx] = config;
   }
   else
@@ -203,7 +205,7 @@ void CConfig::getMailboxes(QVector<QString> &mailboxes) const
 void CConfig::getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                         QString &user, QString &password, QString &server,
                         uint16_t &port, QString &imap_mailbox,
-                        bool &allow_self_signed) const
+                        bool &allow_self_signed, bool *password_ready) const
 {
   int idx = findMailbox(mailboxname);
   if (idx == -1)
@@ -219,6 +221,10 @@ void CConfig::getConfig(const QString &mailboxname, PROTOCOLS &protocol,
   port = cfg.m_Port;
   imap_mailbox = cfg.m_ImapMailBox;
   allow_self_signed = cfg.m_AllowSelfSigned;
+  if (password_ready != nullptr)
+  {
+    *password_ready = cfg.m_PasswordReady;
+  }
 }
 
 void CConfig::beginUpdate()

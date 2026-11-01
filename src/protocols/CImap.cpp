@@ -222,6 +222,11 @@ bool CImap::getMail(int &unread, int &read)
 
 void CImap::doWork(void)
 {
+  if (!m_PasswordReady)
+  {
+    qDebug() << "Skipping check until password is loaded from keychain for" << m_Server;
+    return;
+  }
   if (m_Socket == NULL)
   {
     createConnection();

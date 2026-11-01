@@ -30,7 +30,11 @@ void CMailMonitor::updatePassword(const QString &mailbox, const QString &passwor
     {
       IMailProtocol *srv = data->m_Server;
       QMetaObject::invokeMethod(
-          srv, [srv, password]() { srv->updatePassword(password); },
+          srv,
+          [srv, password]() {
+            srv->updatePassword(password);
+            srv->doWork();
+          },
           Qt::QueuedConnection);
       break;
     }

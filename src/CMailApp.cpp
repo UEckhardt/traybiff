@@ -28,8 +28,9 @@ void CMailApp::loadConfig(void)
     uint16_t port = 0;
     QString imap_mailbox;
     bool allow_self_signed = false;
+    bool password_ready = false;
     cfg.getConfig(mailboxes[i], protocol, user, password, server, port,
-                  imap_mailbox, allow_self_signed);
+                  imap_mailbox, allow_self_signed, &password_ready);
     switch (protocol)
     {
     case PROTO_POP3:
@@ -55,6 +56,7 @@ void CMailApp::loadConfig(void)
       exit(-1);
     }
 
+    mp->setPasswordReady(password_ready);
     m_Monitor.addServer(mailboxes[i], mp);
   }
 

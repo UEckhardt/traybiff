@@ -69,6 +69,11 @@ bool CPop3::readResponse(QStringList &result)
 
 void CPop3::doWork(void)
 {
+  if (!m_PasswordReady)
+  {
+    qDebug() << "Skipping check until password is loaded from keychain for" << m_Server;
+    return;
+  }
   if (m_Socket == NULL)
   {
     createConnection();

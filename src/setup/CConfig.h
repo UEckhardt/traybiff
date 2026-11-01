@@ -41,6 +41,7 @@ typedef struct
   QString m_Password;
   QString m_ImapMailBox;
   bool m_AllowSelfSigned = false;
+  bool m_PasswordReady = false;
 } MAILBOX_CONFIG_T;
 
 typedef struct
@@ -99,7 +100,7 @@ public:
   void getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                  QString &user, QString &password, QString &server,
                  uint16_t &port, QString &imap_mailbox,
-                 bool &allow_self_signed) const;
+                 bool &allow_self_signed, bool *password_ready = nullptr) const;
   void save();
   void beginUpdate();
   void abortUpdate();
