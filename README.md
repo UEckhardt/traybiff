@@ -1,4 +1,4 @@
-# ![Logo](./src/icons/32x32/traybiff.png) TrayBiff 0.5.2
+# ![Logo](./src/icons/32x32/traybiff.png) TrayBiff 0.6.0
 TrayBiff is a "biff" or new mail notification utility. It is configurable, easy to use and easy to setup. It embeds in
 the tray bar of your window manager (currently only tested for KDE).
 
@@ -9,8 +9,24 @@ Passwords are stored in a Keychain e.g. the GNOME Keyring is used, or on KDE KWa
 # Minimum Requirements for Building
 - CMake 3.25
 - Qt 6.5.0
+- QtKeychain (Qt6) >= 0.14.0
 - libqsvgicon
 - GCC or clang supporting C++17
+
+## Installing Build Dependencies
+
+### openSUSE Leap 16.0
+```bash
+sudo zypper install cmake gcc-c++ make rpm-build \
+  qt6-core-devel qt6-gui-devel qt6-network-devel qt6-widgets-devel \
+  qtkeychain-qt6-devel libQt6Svg6
+```
+
+### Debian 13 (Trixie)
+```bash
+sudo apt install build-essential cmake \
+  qt6-base-dev qtkeychain-qt6-dev qt6-svg-plugins
+```
 
 # Clone, Build and Install
 
@@ -18,9 +34,9 @@ Passwords are stored in a Keychain e.g. the GNOME Keyring is used, or on KDE KWa
 git clone https://github.com/UEckhardt/traybiff.git
 mkdir build_traybiff
 cd build_traybiff
-cmake ../traybiff/
+cmake -DCMAKE_BUILD_TYPE=Release ../traybiff/
 make
-sudo make install
+make package
 ```
 
 # Configuration
