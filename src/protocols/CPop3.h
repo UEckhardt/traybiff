@@ -26,7 +26,8 @@ class CPop3 : public CMailSocket
   Q_OBJECT
 public:
   CPop3(const QString &server, const QString &user, const QString &password,
-        uint16_t port, bool useSSL = false, bool allowSelfSigned = false);
+        uint16_t port, bool debug_protocol, bool useSSL = false,
+        bool allowSelfSigned = false);
   virtual ~CPop3();
 
 private:
@@ -61,7 +62,7 @@ private:
   /*
    * Set a new password
    */
-  void updatePassword(const QString newpasswd) override
+  void updatePassword(const QString &newpasswd) override
   {
     m_Password = newpasswd;
   }

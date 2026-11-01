@@ -21,33 +21,34 @@ void CMailApp::loadConfig(void)
   for (int i = 0; i < mailboxes.size(); ++i)
   {
     IMailProtocol *mp = nullptr;
-    PROTOCOLS protocol;
+    PROTOCOLS protocol = PROTO_POP3;
     QString user;
     QString password;
     QString server;
-    uint16_t port;
+    uint16_t port = 0;
     QString imap_mailbox;
+    bool allow_self_signed = false;
     cfg.getConfig(mailboxes[i], protocol, user, password, server, port,
-                  imap_mailbox);
+                  imap_mailbox, allow_self_signed);
     switch (protocol)
     {
     case PROTO_POP3:
-      mp = new CPop3(server, user, password, port, false, false);
+      mp = new CPop3(server, user, password, port, m_DebugProtocol, false, allow_self_signed);
       break;
     case PROTO_POP3S:
-      mp = new CPop3(server, user, password, port, true, true);
+      mp = new CPop3(server, user, password, port, m_DebugProtocol, true, allow_self_signed);
       break;
     case PROTO_IMAP4:
       mp = new CImap(server, user, password, port, imap_mailbox, m_DebugProtocol, false,
-                     false);
+                     allow_self_signed);
       break;
     case PROTO_IMAP3:
       mp = new CImap(server, user, password, port, imap_mailbox, m_DebugProtocol, false,
-                     false);
+                     allow_self_signed);
       break;
     case PROTO_IMAPS:
       mp = new CImap(server, user, password, port, imap_mailbox, m_DebugProtocol, true,
-                     true);
+                     allow_self_signed);
       break;
     default:
       qCritical() << "Invalid protocol " << protocol;
@@ -157,7 +158,5 @@ void CMailApp::mailError(IMailProtocol *server, const QString &errtxt)
 void CMailApp::reloadConfig()
 {
   m_Monitor.halt();
-  m_Monitor.quit();
-  m_Monitor.wait(10000);
   loadConfig();
 }

@@ -14,27 +14,52 @@
 #include "CMailApp.h"
 #include "traybiff.h"
 #include "setup/CSetupDialog.h"
-#include <stdlib.h>
+#include <QDir>
+#include <QStandardPaths>
 #include <fcntl.h>
+#include <mutex>
+#include <stdlib.h>
+#include <sys/stat.h>
 
 using namespace std;
 
 void logMsg(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+  static std::mutex logMutex;
+  std::lock_guard<std::mutex> lock(logMutex);
+
   QByteArray localMsg = msg.toLocal8Bit();
   const char *file = context.file ? context.file : "";
   const char *function = context.function ? context.function : "";
-  FILE *fp = fopen("/tmp/traybiff.log", "a");
+
+  QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation);
+  if (!cacheDir.isEmpty())
+  {
+    QDir().mkpath(cacheDir);
+  }
+  QString logPath = cacheDir.isEmpty() ? QString("/tmp/traybiff-%1.log").arg(getuid())
+                                       : (cacheDir + "/traybiff.log");
+  int fd = open(logPath.toLocal8Bit().constData(),
+                O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW | O_CLOEXEC,
+                S_IRUSR | S_IWUSR);
+  FILE *fp = (fd >= 0) ? fdopen(fd, "a") : nullptr;
   if (fp == nullptr)
   {
-    fprintf(stderr, "Can not open /tmp/traybiff.log\n");
-    exit(-1);
+    if (fd >= 0)
+    {
+      close(fd);
+    }
+    fp = stderr;
   }
   time_t timer = time(NULL);
-  tm* tm_info = localtime(&timer);
+  tm tm_buf;
+  tm *tm_info = localtime_r(&timer, &tm_buf);
   char buffer[30];
-  strftime(buffer, sizeof(buffer), "%m-%d %H:%M:%S > ", tm_info);
-  fputs(buffer, fp);
+  if (tm_info != nullptr)
+  {
+    strftime(buffer, sizeof(buffer), "%m-%d %H:%M:%S > ", tm_info);
+    fputs(buffer, fp);
+  }
   switch (type)
   {
   case QtDebugMsg:
@@ -53,7 +78,10 @@ void logMsg(QtMsgType type, const QMessageLogContext &context, const QString &ms
     fprintf(fp, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
     break;
   }
-  fclose(fp);
+  if (fp != stderr)
+  {
+    fclose(fp);
+  }
 }
 
 int main(int argc, char **argv)

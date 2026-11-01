@@ -11,6 +11,18 @@
 
 #include "CImap.h"
 
+namespace
+{
+QString quoteImapString(QString str)
+{
+  str.remove('\r');
+  str.remove('\n');
+  str.replace('\\', "\\\\");
+  str.replace('"', "\\\"");
+  return "\"" + str + "\"";
+}
+} // namespace
+
 CImap::CImap(const QString &server, const QString &user,
              const QString &password, uint16_t port, const QString &mailbox,
              bool debug_protocol, bool useSSL, bool allowSelfSigned)
@@ -19,6 +31,7 @@ CImap::CImap(const QString &server, const QString &user,
       m_DebugProtocol(debug_protocol)
 {
   m_UseSSL = useSSL;
+  enableDebug(debug_protocol);
   setServer(server);
 
   clearError();
@@ -67,7 +80,14 @@ bool CImap::writeCmd(const QString &str)
   QString cmd = QString("A%1 %2").arg(m_CmdSeq, 3, 10, QLatin1Char('0')).arg(str);
   if (m_DebugProtocol)
   {
-    qDebug() << "writeCmd " << cmd;
+    if (str.startsWith("LOGIN", Qt::CaseInsensitive))
+    {
+      qDebug() << "writeCmd " << QString("A%1 LOGIN xxxxx").arg(m_CmdSeq, 3, 10, QLatin1Char('0'));
+    }
+    else
+    {
+      qDebug() << "writeCmd " << cmd;
+    }
   }
   return writeLine(cmd);
 }
@@ -131,7 +151,7 @@ bool CImap::getMail(int &unread, int &read)
     return false;
   }
 
-  QString cmd = "SELECT " + m_Mailbox;
+  QString cmd = "SELECT " + quoteImapString(m_Mailbox);
   if (!writeCmd(cmd))
   {
     return false;
@@ -209,7 +229,8 @@ void CImap::doWork(void)
   clearError();
   if (m_UseSSL)
   {
-    m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
+    m_Socket->setPeerVerifyMode(
+        m_AllowSelfSigned ? QSslSocket::VerifyNone : QSslSocket::VerifyPeer);
     m_Socket->connectToHostEncrypted(m_Server, m_Port);
     if (!m_Socket->waitForEncrypted(TIMEOUT))
     {
@@ -342,10 +363,8 @@ bool CImap::login()
     else
     {
       qInfo("Starting TLS");
-      if (m_AllowSelfSigned)
-      {
-        m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
-      }
+      m_Socket->setPeerVerifyMode(
+          m_AllowSelfSigned ? QSslSocket::VerifyNone : QSslSocket::VerifyPeer);
       m_Socket->startClientEncryption();
       if (!m_Socket->waitForEncrypted(TIMEOUT))
       {
@@ -358,7 +377,7 @@ bool CImap::login()
     }
   }
   // Plaintext authentication
-  str = "LOGIN " + m_User + " " + m_Password;
+  str = "LOGIN " + quoteImapString(m_User) + " " + quoteImapString(m_Password);
   if (!writeCmd(str))
   {
     end();

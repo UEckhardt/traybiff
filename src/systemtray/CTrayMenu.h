@@ -21,6 +21,7 @@ class CMailApp;
 
 class CTrayMenu : public QObject
 {
+  Q_OBJECT
 public:
   CTrayMenu(QApplication &app);
   virtual ~CTrayMenu() {}

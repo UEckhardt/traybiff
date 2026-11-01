@@ -50,7 +50,7 @@ public:
   /*
    * Set a new password
    */
-  virtual void updatePassword(const QString newpasswd) = 0;
+  virtual void updatePassword(const QString &newpasswd) = 0;
 
 public slots:
   virtual void doWork(void) = 0;
@@ -71,7 +71,6 @@ protected:
   {
     m_Error = err;
     emit mailError(this, err);
-    sleep(1); /* Delay in case of errors */
   }
 
   /*

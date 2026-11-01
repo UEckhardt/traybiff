@@ -19,12 +19,13 @@
 using namespace std;
 
 CPop3::CPop3(const QString &server, const QString &user,
-             const QString &password, uint16_t port, bool useSSL,
-             bool allowSelfSigned)
+             const QString &password, uint16_t port, bool debug_protocol,
+             bool useSSL, bool allowSelfSigned)
     : m_User(user), m_Password(password), m_Port(port), m_AuthCramMd5(false),
       m_AuthApop(false), m_AllowSelfSigned(allowSelfSigned)
 {
   m_UseSSL = useSSL;
+  enableDebug(debug_protocol);
   setServer(server);
   clearError();
 }
@@ -75,10 +76,8 @@ void CPop3::doWork(void)
   clearError();
   if (m_UseSSL)
   {
-    if (m_AllowSelfSigned)
-    {
-      m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
-    }
+    m_Socket->setPeerVerifyMode(
+        m_AllowSelfSigned ? QSslSocket::VerifyNone : QSslSocket::VerifyPeer);
     m_Socket->connectToHostEncrypted(m_Server, m_Port);
     if (!m_Socket->waitForEncrypted(TIMEOUT))
     {
@@ -216,10 +215,8 @@ bool CPop3::login()
       else
       {
         qInfo("Starting TLS");
-        if (m_AllowSelfSigned)
-        {
-          m_Socket->setPeerVerifyMode(QSslSocket::VerifyNone);
-        }
+        m_Socket->setPeerVerifyMode(
+            m_AllowSelfSigned ? QSslSocket::VerifyNone : QSslSocket::VerifyPeer);
         m_Socket->startClientEncryption();
         if (!m_Socket->waitForEncrypted(TIMEOUT))
         {
@@ -264,6 +261,11 @@ bool CPop3::login()
     }
   }
 
+  QString cleanUser = m_User;
+  cleanUser.remove('\r').remove('\n');
+  QString cleanPass = m_Password;
+  cleanPass.remove('\r').remove('\n');
+
   // APOP is not as secure as CRAM-MD5 but it's still better
   // than sending the password in the clear
   if ((m_AuthApop) && (!m_UseSSL))
@@ -272,11 +274,11 @@ bool CPop3::login()
 
     QCryptographicHash md5(QCryptographicHash::Md5);
     md5.addData(m_ChallApop.toLatin1());
-    md5.addData(m_Password.toLatin1());
+    md5.addData(cleanPass.toLatin1());
 
     digest = md5.result().toHex();
 
-    str = QString("APOP %1 %2").arg(m_User, digest);
+    str = QString("APOP %1 %2").arg(cleanUser, digest);
     if (writeLine(str))
     {
       // APOP successful
@@ -288,7 +290,7 @@ bool CPop3::login()
     qInfo("APOP failed");
   }
   // Plaintext authentication
-  str = "USER " + m_User;
+  str = "USER " + cleanUser;
   writeLine(str);
   if (!readResponse(list))
   {
@@ -298,7 +300,7 @@ bool CPop3::login()
     end();
     return false;
   }
-  str = "PASS " + m_Password;
+  str = "PASS " + cleanPass;
   writeLine(str);
   if (!readResponse(list))
   {

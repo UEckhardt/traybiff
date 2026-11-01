@@ -10,15 +10,16 @@
  */
 
 #include "CMailMonitor.h"
+#include "CMailSocket.h"
 #include "setup/CConfig.h"
-#include <chrono>
-#include <thread>
+#include <QMetaObject>
 
-CMailMonitor::CMailMonitor() : m_Running(false)
+CMailMonitor::CMailMonitor() : m_Timer(this)
 {
   auto &inst = CConfig::instance();
   m_Polltime = inst.m_PollTime;
   connect(&inst, &CConfig::updatePassword, this, &CMailMonitor::updatePassword);
+  connect(&m_Timer, &QTimer::timeout, this, &CMailMonitor::doWork);
 }
 
 void CMailMonitor::updatePassword(const QString &mailbox, const QString &password)
@@ -27,7 +28,10 @@ void CMailMonitor::updatePassword(const QString &mailbox, const QString &passwor
   {
     if (data->m_MailboxName == mailbox)
     {
-      data->m_Server->updatePassword(password);
+      IMailProtocol *srv = data->m_Server;
+      QMetaObject::invokeMethod(
+          srv, [srv, password]() { srv->updatePassword(password); },
+          Qt::QueuedConnection);
       break;
     }
   }
@@ -57,33 +61,26 @@ void CMailMonitor::addServer(const QString &mailboxname, IMailProtocol *server)
   thread->start();
 }
 
-void CMailMonitor::run()
+void CMailMonitor::start()
 {
-  int i;
-  m_Running = true;
   qDebug() << "Start Mail Monitor " << m_Polltime;
+  emit doWork();
+  m_Timer.start(m_Polltime * 1000);
+}
 
-  while (m_Running)
-  {
-    emit doWork();
-
-    i = 0;
-    while (m_Running && (i < (m_Polltime * 10)))
-    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      i++;
-    }
-  }
-  for (i = 0; i < m_Data.size(); i++)
+void CMailMonitor::halt()
+{
+  m_Timer.stop();
+  for (int i = 0; i < m_Data.size(); i++)
   {
     m_Data[i]->m_Thread->quit();
   }
 
-  for (i = 0; i < m_Data.size(); i++)
+  for (int i = 0; i < m_Data.size(); i++)
   {
-    m_Data[i]->m_Thread->wait(1000);
-    delete (m_Data[i]->m_Thread);
+    m_Data[i]->m_Thread->wait();
     delete (m_Data[i]->m_Server);
+    delete (m_Data[i]->m_Thread);
     delete (m_Data[i]);
   }
 
@@ -99,6 +96,10 @@ void CMailMonitor::handleMailError(IMailProtocol *server, const QString &errtxt)
 
 void CMailMonitor::handleResultReady(int configurationidx, int numUnread, int numRead)
 {
+  if ((configurationidx < 0) || (configurationidx >= m_Data.size()))
+  {
+    return;
+  }
   QString mboxName = getMailboxName(configurationidx);
   if ((m_Data[configurationidx]->m_Unread != numUnread) || (m_Data[configurationidx]->m_Read != numRead))
   {

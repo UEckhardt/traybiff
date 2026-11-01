@@ -52,9 +52,10 @@ CConfig::CConfig() : m_KeyChain(this)
     const QString &server = settings.value(KEY_SERVER, QString("")).toString();
     const QString &imap_mailbox = settings.value(KEY_IMAP_MAILBOX, QString("")).toString();
     int port = settings.value(KEY_PORT, 0).toInt();
+    bool allow_self_signed = settings.value(KEY_ALLOW_SELF_SIGNED, false).toBool();
     qInfo() << "Reading Mailbox" << mailboxName << " " << user;
     addConfig(mailboxName, (PROTOCOLS)protocol, user, server,
-              port, imap_mailbox);
+              port, imap_mailbox, allow_self_signed);
     getPassword(mailboxName);
   }
   settings.endArray();
@@ -149,7 +150,7 @@ int CConfig::findMailbox(const QString &mailboxname) const
 
 void CConfig::addConfig(const QString &mailboxname, PROTOCOLS protocol,
                         const QString &user, const QString &server, uint16_t port,
-                        const QString &imap_mailbox)
+                        const QString &imap_mailbox, bool allow_self_signed)
 {
   MAILBOX_CONFIG_T config;
 
@@ -165,10 +166,12 @@ void CConfig::addConfig(const QString &mailboxname, PROTOCOLS protocol,
   config.m_Server = server;
   config.m_Port = port;
   config.m_ImapMailBox = imap_mailbox;
+  config.m_AllowSelfSigned = allow_self_signed;
 
   int idx = findMailbox(mailboxname);
   if (idx != -1)
   {
+    config.m_Password = m_CurrentConfig.m_MailboxConfig[idx].m_Password;
     m_CurrentConfig.m_MailboxConfig[idx] = config;
   }
   else
@@ -199,7 +202,8 @@ void CConfig::getMailboxes(QVector<QString> &mailboxes) const
 
 void CConfig::getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                         QString &user, QString &password, QString &server,
-                        uint16_t &port, QString &imap_mailbox) const
+                        uint16_t &port, QString &imap_mailbox,
+                        bool &allow_self_signed) const
 {
   int idx = findMailbox(mailboxname);
   if (idx == -1)
@@ -214,6 +218,7 @@ void CConfig::getConfig(const QString &mailboxname, PROTOCOLS &protocol,
   server = cfg.m_Server;
   port = cfg.m_Port;
   imap_mailbox = cfg.m_ImapMailBox;
+  allow_self_signed = cfg.m_AllowSelfSigned;
 }
 
 void CConfig::beginUpdate()
@@ -274,6 +279,8 @@ void CConfig::save()
                       m_CurrentConfig.m_MailboxConfig.at(i).m_Port);
     settings.setValue(KEY_IMAP_MAILBOX,
                       m_CurrentConfig.m_MailboxConfig.at(i).m_ImapMailBox);
+    settings.setValue(KEY_ALLOW_SELF_SIGNED,
+                      m_CurrentConfig.m_MailboxConfig.at(i).m_AllowSelfSigned);
     m_KeyChain.writeKey(mbName, m_CurrentConfig.m_MailboxConfig.at(i).m_Password);
   }
   settings.endArray();

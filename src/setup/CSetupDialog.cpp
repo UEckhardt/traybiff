@@ -52,6 +52,8 @@ CSetupDialog::CSetupDialog(QWidget *parent) : QDialog(parent)
   con_line_edit(lineEditServer);
   con_line_edit(lineEditPort);
   con_line_edit(lineEditIMAPMailbox);
+  connect(checkBoxAllowSelfSigned, &QCheckBox::toggled, this,
+          [this](bool) { on_InputChanged(""); });
 
   QVector<QString> mailboxes;
   cfg.getMailboxes(mailboxes);
@@ -77,16 +79,18 @@ void CSetupDialog::displayMailBox(const QString mailboxname)
   QSignalBlocker b5(lineEditPort);
   QSignalBlocker b6(lineEditIMAPMailbox);
   QSignalBlocker b7(comboBoxProtocol);
+  QSignalBlocker b8(checkBoxAllowSelfSigned);
   CConfig &cfg = CConfig::instance();
-  PROTOCOLS protocol;
+  PROTOCOLS protocol = PROTO_POP3;
   QString user;
   QString password;
   QString server;
   QString imap_mailbox;
-  uint16_t port;
+  uint16_t port = 0;
+  bool allow_self_signed = false;
 
   cfg.getConfig(mailboxname, protocol, user, password, server, port,
-                imap_mailbox);
+                imap_mailbox, allow_self_signed);
 
   qInfo("Mailbox %s %d %s", qUtf8Printable(mailboxname), protocol,
         qUtf8Printable(user));
@@ -101,6 +105,7 @@ void CSetupDialog::displayMailBox(const QString mailboxname)
   lineEditServer->setText(server);
   lineEditPort->setText(QString::number(port));
   lineEditIMAPMailbox->setText(imap_mailbox);
+  checkBoxAllowSelfSigned->setChecked(allow_self_signed);
 }
 
 void CSetupDialog::done(int result)
@@ -156,6 +161,7 @@ void CSetupDialog::clear()
   QSignalBlocker b5(lineEditPort);
   QSignalBlocker b6(lineEditIMAPMailbox);
   QSignalBlocker b7(comboBoxProtocol);
+  QSignalBlocker b8(checkBoxAllowSelfSigned);
 
   lineEditName->setText("");
   lineEditUser->setText("");
@@ -163,6 +169,7 @@ void CSetupDialog::clear()
   lineEditServer->setText("");
   lineEditPort->setText("");
   lineEditIMAPMailbox->setText("");
+  checkBoxAllowSelfSigned->setChecked(false);
 
   comboBoxProtocol->setCurrentIndex(-1);
 }
@@ -179,11 +186,12 @@ void CSetupDialog::save()
   const QString &server = lineEditServer->text();
   const QString &imap_mailbox = lineEditIMAPMailbox->text();
   uint16_t port = lineEditPort->text().toInt(&ok);
+  bool allow_self_signed = checkBoxAllowSelfSigned->isChecked();
 
   if (inputOk())
   {
     cfg.addConfig(mailboxname, (PROTOCOLS)proto, user, server,
-                  port, imap_mailbox);
+                  port, imap_mailbox, allow_self_signed);
     cfg.setPassword(mailboxname, password);
     QList<QListWidgetItem *> items = listWidgetServers->findItems(mailboxname, Qt::MatchExactly);
     if (items.size() == 0)
@@ -227,7 +235,7 @@ void CSetupDialog::on_listWidgetServers_itemSelectionChanged()
 
 void CSetupDialog::on_comboBoxProtocol_currentIndexChanged(int idx)
 {
-  if (idx >= 0)
+  if ((idx >= 0) && (idx < PROTO_LAST))
   {
     lineEditPort->setText(QString::number(default_ports[idx]));
     on_InputChanged("");
@@ -319,14 +327,13 @@ void CSetupDialog::on_toolButtonStopped_released()
 void CSetupDialog::AddResetMenu(QToolButton *toolButton, const IconType &type)
 {
   QVariant v(static_cast<int>(type));
-  QAction *a = new QAction(tr("Reset"));
+  QAction *a = new QAction(tr("Reset"), this);
   a->setData(v);
   m_Actions.append(a); // Save action for later free.
   QMenu *m = new QMenu(toolButton);
   m->addAction(a);
   toolButton->setMenu(m);
-  connect(m, SIGNAL(triggered(QAction *)), this,
-          SLOT(on_Reset(QAction *)));
+  connect(m, &QMenu::triggered, this, &CSetupDialog::on_Reset);
 }
 
 void CSetupDialog::on_Reset(QAction *action)

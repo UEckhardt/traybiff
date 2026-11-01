@@ -23,8 +23,6 @@ public:
   void halt(void)
   {
     m_Monitor.halt();
-    m_Monitor.quit();
-    m_Monitor.wait(500);
   }
 
 private:

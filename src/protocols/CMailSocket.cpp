@@ -75,7 +75,7 @@ bool CMailSocket::writeLine(const QString &str)
 {
   if (m_Debug)
   {
-    if (str.contains("PASS") || str.contains("LOGIN"))
+    if (str.contains("PASS", Qt::CaseInsensitive) || str.contains("LOGIN", Qt::CaseInsensitive))
     {
       qDebug() << "writeLine xxxxx";
     }

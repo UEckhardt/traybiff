@@ -83,15 +83,16 @@ include_directories(${QTKEYCHAIN_INCLUDE_DIRS}/qt6keychain)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${QTMODULES} ${QTKEYCHAIN_LIBRARIES})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    include(GNUInstallDirs)
     # Install desktop entry
-    install(FILES data/traybiff.desktop DESTINATION share/applications )
+    install(FILES data/traybiff.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications )
 
     # Install icon
-    install(FILES icons/64x64/traybiff.png DESTINATION /usr/share/icons/hicolor/64x64/apps)
-    install(FILES icons/64x64/traybiff.png DESTINATION /usr/share/icons/hicolor/128x128/apps)
+    install(FILES icons/64x64/traybiff.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/64x64/apps)
+    install(FILES icons/128x128/traybiff.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/128x128/apps)
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}
-        RUNTIME DESTINATION bin)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

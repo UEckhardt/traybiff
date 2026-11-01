@@ -12,11 +12,12 @@
 #ifndef CMAILMONITOR_H_
 #define CMAILMONITOR_H_
 
-#include <QThread>
-#include <QVector>
-#include <QSharedPointer>
 #include <QDebug>
+#include <QObject>
+#include <QSharedPointer>
 #include <QThread>
+#include <QTimer>
+#include <QVector>
 #include "IMailProtocol.h"
 
 struct SMailData
@@ -28,7 +29,7 @@ struct SMailData
   int m_Unread;
 };
 
-class CMailMonitor : public QThread
+class CMailMonitor : public QObject
 {
   Q_OBJECT
 public:
@@ -40,15 +41,15 @@ public:
   }
   void addServer(const QString &mailboxname, IMailProtocol *server);
 
-  void run();
-
-  void halt()
-  {
-    m_Running = false;
-  }
+  void start();
+  void halt();
 
   QString getMailboxName(int configidx) const
   {
+    if ((configidx < 0) || (configidx >= m_Data.size()))
+    {
+      return QString();
+    }
     return m_Data[configidx]->m_MailboxName;
   }
 
@@ -57,18 +58,23 @@ public:
     return (m_Data);
   }
 
-  void updatePollTime(int tm) {
+  void updatePollTime(int tm)
+  {
     m_Polltime = tm;
+    if (m_Timer.isActive())
+    {
+      m_Timer.setInterval(m_Polltime * 1000);
+    }
   }
-  
+
 signals:
   void updateResult(void);
   void mailError(IMailProtocol *server, const QString &errtxt);
   void doWork(void);
 
 private:
-  volatile bool m_Running;
   int m_Polltime;
+  QTimer m_Timer;
   QVector<SMailData *> m_Data;
 
 private slots:

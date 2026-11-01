@@ -1,5 +1,5 @@
-#ifndef _QT_BIFF_H
-#define _QT_BIFF_H
+#ifndef TRAYBIFF_H_
+#define TRAYBIFF_H_
 
 #include <QApplication>
 #include <QMessageLogger>
@@ -8,9 +8,9 @@
 #include "protocols/CMailMonitor.h"
 #include "systemtray/CTrayMenu.h"
 
-#define __STR(s) #s
-#define __XSTR(s) __STR(s)
-#define VER_STR __XSTR(VER_MAJOR) "." __XSTR(VER_MINOR) "." __XSTR(VER_STEP)
+#define TB_STR(s) #s
+#define TB_XSTR(s) TB_STR(s)
+#define VER_STR TB_XSTR(VER_MAJOR) "." TB_XSTR(VER_MINOR) "." TB_XSTR(VER_STEP)
 
 typedef enum
 {
@@ -22,4 +22,4 @@ typedef enum
   PROTO_LAST
 } PROTOCOLS;
 
-#endif
+#endif /* TRAYBIFF_H_ */

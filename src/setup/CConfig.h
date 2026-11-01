@@ -40,6 +40,7 @@ typedef struct
   QString m_User;
   QString m_Password;
   QString m_ImapMailBox;
+  bool m_AllowSelfSigned = false;
 } MAILBOX_CONFIG_T;
 
 typedef struct
@@ -73,7 +74,8 @@ public:
   void addConfig(const QString &mailboxname, PROTOCOLS protocol,
                  const QString &user,
                  const QString &server, uint16_t port,
-                 const QString &imap_mailbox);
+                 const QString &imap_mailbox,
+                 bool allow_self_signed = false);
 
   /*
    * Request to get password
@@ -96,7 +98,8 @@ public:
   void deleteConfig(const QString &mailboxname);
   void getConfig(const QString &mailboxname, PROTOCOLS &protocol,
                  QString &user, QString &password, QString &server,
-                 uint16_t &port, QString &imap_mailbox) const;
+                 uint16_t &port, QString &imap_mailbox,
+                 bool &allow_self_signed) const;
   void save();
   void beginUpdate();
   void abortUpdate();
@@ -164,7 +167,7 @@ private:
                                                                                  KEY_ICSTOPPED};
 
   static inline const char
-      *DEFAULT_THEME_ICONS[static_cast<int>(IconType::icLast) + 1] = {"mail-unread", "mail-read", "dialog-warning", "mail-replied",
+      *DEFAULT_THEME_ICONS[static_cast<int>(IconType::icLast) + 1] = {"mail-folder-outbox", "mail-folder-inbox", "dialog-warning", "mail-folder-sent",
                                                                       "network-offline"};
 
   static inline const QString FALLBACK_ICON = ":/icons/32x32/hi-app-kbiff.png";
@@ -180,6 +183,7 @@ private:
   static inline const QString KEY_SERVER = "server";
   static inline const QString KEY_PORT = "port";
   static inline const QString KEY_IMAP_MAILBOX = "imap_mailbox";
+  static inline const QString KEY_ALLOW_SELF_SIGNED = "allow_self_signed";
 
   // Global config keys
   static inline const QString KEY_POLL = "poll";

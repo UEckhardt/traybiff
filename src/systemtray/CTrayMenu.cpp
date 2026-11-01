@@ -43,7 +43,7 @@ void CTrayMenu::show(QIcon icon, const QString &msg)
   Q_ASSERT(!icon.isNull());
   if (m_TrayIcon == nullptr)
   {
-    m_TrayIcon = new QSystemTrayIcon(icon);
+    m_TrayIcon = new QSystemTrayIcon(icon, this);
     m_TrayIcon->setContextMenu(&m_TrayMenu);
   }
   else
